@@ -1,0 +1,56 @@
+# PrestaShop 8.2 + MariaDB for developing and smoke-testing the Varizet module.
+#   bin/build-zip.sh --stage dev/stage           # module + bundled SDK → dev/stage/varizet
+#   docker compose -p varizet-ps -f dev/docker-compose.yml up -d
+# Shop: http://localhost:8092 (admin: /admin-dev, admin@example.com / Varizet123!).
+name: varizet-ps
+
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: prestashop
+      MARIADB_USER: prestashop
+      MARIADB_PASSWORD: prestashop
+      MARIADB_ROOT_PASSWORD: root
+    ports:
+      - "3308:3306"
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  prestashop:
+    image: prestashop/prestashop:8.2-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8092:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      DB_SERVER: db
+      DB_NAME: prestashop
+      DB_USER: prestashop
+      DB_PASSWD: prestashop
+      DB_PREFIX: ps_
+      PS_INSTALL_AUTO: "1"
+      PS_DOMAIN: localhost:8092
+      PS_FOLDER_ADMIN: admin-dev
+      PS_FOLDER_INSTALL: install-dev
+      PS_COUNTRY: ir
+      PS_LANGUAGE: en
+      PS_DEV_MODE: "0"
+      ADMIN_MAIL: admin@example.com
+      ADMIN_PASSWD: Varizet123!
+      VARIZET_API_BASE_URL: ${VARIZET_API_BASE_URL:-http://host.docker.internal:4000}
+    volumes:
+      - ps:/var/www/html
+      - ./stage/varizet:/var/www/html/modules/varizet
+
+volumes:
+  db:
+  ps:

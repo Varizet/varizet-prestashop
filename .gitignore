@@ -1,0 +1,10 @@
+/vendor/
+/dist/
+/.phpunit.cache/
+/composer.lock
+/varizet/lib/
+/dev/.env
+/dev/artifacts/
+/dev/stage/
+/dev/.webhook-secret
+/.sdk/
